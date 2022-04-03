@@ -1,5 +1,6 @@
 import time
 import cv2
+import numpy as np
 
 """
 Replace following with your own algorithm logic
@@ -31,9 +32,9 @@ def GetLocation(move_type, env, current_frame):
         Upper left = (0,0)
         Bottom right = (W, H) 
         """
-        coordinate = env.action_space_abs.sample()
+        #coordinate = env.action_space_abs.sample()
 
-        duck_image = cv2.imread("duck_images/green_duck.png")
+        duck_image = cv2.imread("duck-images/duck10.png", 0)
 
         ## Call find duck to get coords
         coordinate = findDuck(current_frame, duck_image, 0.8)
@@ -47,19 +48,21 @@ def findDuck(game_screen, duck_image, threshold):
     grey_game_screen = cv2.cvtColor(game_screen, cv2.COLOR_BGR2GRAY)
 
     ## Get grayscale of duck_image
-    grey_duck = cv2.cvtColor(duck_image, cv2.COLOR_BGR2GRAY)
+    #grey_duck = cv2.cvtColor(duck_image, cv2.COLOR_BGR2GRAY)
 
     ## Get dimensions of duck
-    w, h = grey_duck.shape[::-1]
+    w, h = duck_image.shape[::-1]
 
     ## Call match template to find a duck
-    res = cv2.matchTemplate(grey_game_screen, grey_duck, cv2.TM_CCOEFF_NORMED)
+    res = cv2.matchTemplate(grey_game_screen, duck_image, cv2.TM_CCOEFF_NORMED)
     
     loc = np.where(res >= threshold)
 
     for pt in zip(*loc[::-1]):
-        cv2.rectangle(game_screen, pt, (pt[0]+w, pt[1]+h), (0,0,255), 2)
-
+        #cv2.rectangle(game_screen, pt, (pt[0]+w, pt[1]+h), (0,0,255), 2)
+        print("Duck Found!")
+        return pt[0], pt[1]
     ## return coordinates of first found duck
-    return loc[0][0], loc[0][1]
+    print("NO DUCKS HERE!")
+    return 0,0
 
