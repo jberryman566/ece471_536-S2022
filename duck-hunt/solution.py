@@ -1,6 +1,7 @@
 import time
 import cv2
 import numpy as np
+import os
 
 """
 Replace following with your own algorithm logic
@@ -9,7 +10,7 @@ Two random coordinate generator has been provided for testing purposes.
 Manual mode where you can use your mouse as also been added for testing purposes.
 """
 def GetLocation(move_type, env, current_frame):
-    time.sleep(1) #artificial one second processing time
+    #time.sleep(1) #artificial one second processing time
     
     #Use relative coordinates to the current position of the "gun", defined as an integer below
     if move_type == "relative":
@@ -33,11 +34,48 @@ def GetLocation(move_type, env, current_frame):
         Bottom right = (W, H) 
         """
         #coordinate = env.action_space_abs.sample()
+        coordinate = (0,0)
+        ## Check if last frame exists
+        if (os.path.exists("last_frame.png")):
 
-        duck_image = cv2.imread("duck-images/duck10.png", 0)
+            last_frame = cv2.imread("last_frame.png", 0)
+            current_frame = cv2.cvtColor(current_frame, cv2.COLOR_RGB2GRAY)
+
+            ## Calculate difference
+            frame_difference = cv2.subtract(current_frame, last_frame)
+            cv2.imwrite("output.png", frame_difference)
+            #print(frame_difference)
+
+            ## Blob detection on difference
+            x, y = frame_difference.shape[::-1]
+
+            blob_counter = 0
+            blob_threshold = 6
+
+            for coord_x in range(0,x-1,3):
+                for coord_y in range(0,y-1,3):
+                    if (frame_difference[coord_y][coord_x] > 1):
+                        blob_counter += 1
+                    else:
+                        blob_counter = 0
+
+                    if (blob_counter >= blob_threshold):
+                        #print(f"Duck found at: {coord_x}, {coord_y}")
+                        coordinate = (coord_y, coord_x)
+                        cv2.imwrite("last_frame.png", cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR))
+                        return [{'coordinate' : coordinate, 'move_type' : move_type}]
+
+
+
+            #print(keypoints)
+
+        else:
+            cv2.imwrite("last_frame.png", cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR))
+            coordinate = (0,0)
+        ##duck_image = cv2.imread("duck-images/duck10.png", 0)
 
         ## Call find duck to get coords
-        coordinate = findDuck(current_frame, duck_image, 0.8)
+        ##coordinate = findDuck(current_frame, duck_image, 0.8)
     
     return [{'coordinate' : coordinate, 'move_type' : move_type}]
 
