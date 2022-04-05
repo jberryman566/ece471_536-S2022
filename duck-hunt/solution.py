@@ -2,7 +2,6 @@ import time
 import cv2
 import numpy as np
 import os
-from avg_pool import avgPool
 
 """
 Replace following with your own algorithm logic
