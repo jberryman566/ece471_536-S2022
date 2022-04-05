@@ -2,6 +2,7 @@ import time
 import cv2
 import numpy as np
 import os
+from avg_pool import avgPool
 
 """
 Replace following with your own algorithm logic
@@ -33,45 +34,48 @@ def GetLocation(move_type, env, current_frame):
         Upper left = (0,0)
         Bottom right = (W, H) 
         """
+
         #coordinate = env.action_space_abs.sample()
         coordinate = (0,0)
         ## Check if last frame exists
         if (os.path.exists("last_frame.png")):
 
             last_frame = cv2.imread("last_frame.png", 0)
-            current_frame = cv2.cvtColor(current_frame, cv2.COLOR_RGB2GRAY)
+            current_frame = cv2.resize(cv2.cvtColor(current_frame, cv2.COLOR_RGB2GRAY), None, fx=0.5, fy=0.5)
 
             ## Calculate difference
-            frame_difference = cv2.subtract(current_frame, last_frame)
-            cv2.imwrite("output.png", frame_difference)
+            #print(f"Last Frame Shape: {last_frame.shape}")
+            #print(f"Current Frame Shape: {current_frame.shape}")
+            frame_difference = np.abs(current_frame - last_frame)
+            coordinate = findDuck(frame_difference)
+            #cv2.imwrite("output.png", frame_difference)
             #print(frame_difference)
-
+            cv2.imwrite("last_frame.png", current_frame)
+            return [{'coordinate' : coordinate, 'move_type' : move_type}]
             ## Blob detection on difference
-            x, y = frame_difference.shape[::-1]
+            #x, y = frame_difference.shape[::-1]
 
-            blob_counter = 0
-            blob_threshold = 6
+            #blob_counter = 0
+            #blob_threshold = 5
+        
+            #for coord_x in range(0,x-1,5):
+            #    for coord_y in range(0,y-1,5):
+            #        if (frame_difference[coord_y][coord_x] > 0):
+            #            blob_counter += 1
+            #        else:
+            #            blob_counter = 0
 
-            for coord_x in range(0,x-1,3):
-                for coord_y in range(0,y-1,3):
-                    if (frame_difference[coord_y][coord_x] > 1):
-                        blob_counter += 1
-                    else:
-                        blob_counter = 0
-
-                    if (blob_counter >= blob_threshold):
-                        #print(f"Duck found at: {coord_x}, {coord_y}")
-                        coordinate = (coord_y, coord_x)
-                        cv2.imwrite("last_frame.png", cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR))
-                        return [{'coordinate' : coordinate, 'move_type' : move_type}]
-
-
-
-            #print(keypoints)
+            #        if (blob_counter >= blob_threshold):
+            #            print(f"Duck found at: {coord_x}, {coord_y}")
+            #            coordinate = (coord_y*2, coord_x*2)
+            #            cv2.imwrite("last_frame.png", current_frame)
+            #            return [{'coordinate' : coordinate, 'move_type' : move_type}]
+            
+            #cv2.imwrite("last_frame.png", current_frame)
 
         else:
-            cv2.imwrite("last_frame.png", cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR))
-            coordinate = (0,0)
+            cv2.imwrite("last_frame.png", cv2.resize(cv2.cvtColor(current_frame, cv2.COLOR_RGB2GRAY), None, fx=0.5, fy=0.5))
+            coordinate = env.action_space.sample()
         ##duck_image = cv2.imread("duck-images/duck10.png", 0)
 
         ## Call find duck to get coords
@@ -80,27 +84,29 @@ def GetLocation(move_type, env, current_frame):
     return [{'coordinate' : coordinate, 'move_type' : move_type}]
 
 ## Function for searching for ducks using template matching
-def findDuck(game_screen, duck_image, threshold):
+def findDuck(image):
 
-    ## Get grayscale of game frame
-    grey_game_screen = cv2.cvtColor(game_screen, cv2.COLOR_BGR2GRAY)
 
-    ## Get grayscale of duck_image
-    #grey_duck = cv2.cvtColor(duck_image, cv2.COLOR_BGR2GRAY)
+    params = cv2.SimpleBlobDetector_Params()
+    params.filterByArea = True
+    params.filterByCircularity = True
+    params.maxCircularity = 0.9
+    params.minArea = 5
+    detector = cv2.SimpleBlobDetector_create(params)
 
-    ## Get dimensions of duck
-    w, h = duck_image.shape[::-1]
+    keypoints = detector.detect(image)
 
-    ## Call match template to find a duck
-    res = cv2.matchTemplate(grey_game_screen, duck_image, cv2.TM_CCOEFF_NORMED)
-    
-    loc = np.where(res >= threshold)
+    #for point in keypoints:
+        
+    #    x, y = point.pt
+    #    return (y*2, x*2)
+    if (len(keypoints) > 0):
+        x, y = keypoints[np.random.randint(0, len(keypoints))].pt
+    else:
+        (x, y) = (0, 0)
 
-    for pt in zip(*loc[::-1]):
-        #cv2.rectangle(game_screen, pt, (pt[0]+w, pt[1]+h), (0,0,255), 2)
-        print("Duck Found!")
-        return pt[0], pt[1]
-    ## return coordinates of first found duck
-    print("NO DUCKS HERE!")
-    return 0,0
+    #print("No Ducks Here")
+    return (y*2,x*2)
+
+
 
