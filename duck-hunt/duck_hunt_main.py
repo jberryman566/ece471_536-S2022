@@ -3,7 +3,6 @@ import gym
 import cv2
 import numpy as np
 import pygame
-import os
 from concurrent.futures import ThreadPoolExecutor
 
 import ece471_duckhunt as dh 
